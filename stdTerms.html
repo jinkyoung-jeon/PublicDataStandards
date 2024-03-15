@@ -12,24 +12,28 @@
             <input type="file" id="csv-file" onchange="readExcel(event)" />
             <input id="search" type="text" placeholder="생성할 용어 입력" />
             <button onclick="createText()">변경</button>
+            <button id="clear" onclick="delAll()">초기화</button>
         </div>
         <div id="value">
             <div id="words">
-                <h5>공통표준단어</h5>
-                <ul id="wordList"></ul>
-                <ul id="resultWord">
+                <div id="wordList">
+                    <h5>공통표준단어</h5>
+                </div>
+                <div id="resultWord">
                     <h5>추천 용어</h5>
-                </ul>
+                </div>
             </div>
             <div id="terms">
-                <h5>공통표준용어</h5>
-                <ul id="resultTerm">
-                    <h5>일치하는 용어</h5>
-                </ul>
+                <div>
+                    <h5>공통표준용어</h5>
+                    <div id="resultTerm">
+                        <h5>일치하는 용어</h5>
+                    </div>
+                </div>
                 <h5>----------</h5>
-                <ul id="termList">
+                <div id="termList">
                     <h5>부분 일치하는 용어</h5>
-                </ul>
+                </div>
             </div>
             <div id="domain"></div>
         </div>
@@ -108,10 +112,10 @@
                     }
                 })
                 // 검색하는 단어를 조합하여 사용 가능한 용어 추천
-                let li = document.createElement('li');
-                li.textContent = sumWordKo + " : " + sumWordEn;
-                li.setAttribute('id', 'resultWord');
-                document.getElementById('resultWord').appendChild(li);
+                let ul = document.createElement('ul');
+                ul.textContent = sumWordKo + " : " + sumWordEn;
+                ul.setAttribute('id', 'resultWord');
+                document.getElementById('resultWord').appendChild(ul);
 
                 // 공통표준용어 표출
                 totalList['공통표준용어'].forEach((term, i) => {
@@ -168,6 +172,26 @@
                     }
                 })
             })
+        }
+
+        function delAll() {
+
+            // 삭제 방법 1
+            // const childDiv = document.getElementById('wordList'); // 제거하고 싶은 자식 div의 id
+            // childDiv.parentNode.removeChild(childDiv);
+
+            // 삭제 방법 2                
+            // document.getElementById('wordList').textContent = '';
+            // document.getElementById('resultWord').textContent = '';
+            // document.getElementById('resultTerm').textContent = '';
+            // document.getElementById('termList').textContent = '';
+
+
+            let tagLi = document.querySelectorAll('#value ul');
+
+            tagLi.forEach(function (li) {
+                li.parentNode.removeChild(li);
+            });
         }
     </script>
 </body>
