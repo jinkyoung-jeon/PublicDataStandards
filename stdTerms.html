@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.15.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div>
+        <div id="input-box">
+            <input type="file" id="csv-file" onchange="readExcel(event)" />
+            <input id="search" type="text" placeholder="생성할 용어 입력" />
+            <button onclick="createText()">변경</button>
+        </div>
+        <div id="value">
+            <div id="words">
+                <h5>공통표준단어</h5>
+                <ul id="wordList"></ul>
+                <ul id="resultWord">
+                    <h5>추천 용어</h5>
+                </ul>
+            </div>
+            <div id="terms">
+                <h5>공통표준용어</h5>
+                <ul id="resultTerm">
+                    <h5>일치하는 용어</h5>
+                </ul>
+                <h5>----------</h5>
+                <ul id="termList">
+                    <h5>부분 일치하는 용어</h5>
+                </ul>
+            </div>
+            <div id="domain"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 시트별로 저장
+        let totalList = [];
+
+        const readExcel = (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = e.target.result;
+                const workBook = XLSX.read(data, { type: 'binary' });
+                workBook.SheetNames.forEach((sheetName, i) => {
+                    const row = XLSX.utils.sheet_to_json(workBook.Sheets[sheetName]);
+                    totalList[sheetName] = row;
+                })
+                console.log(totalList);
+            }
+            reader.readAsBinaryString(file);
+        }
+
+        const createText = () => {
+            const value = document.getElementById('search').value.trim();
+            const words = value.split(/\s+/);
+            const termValue = value.replace(/(\s*)/g, "");
+            let termCheck = null;
+            let sumWordKo = '';
+            let sumWordEn = '';
+            let cmStrdWordNm = "공통표준단어명";
+            let cmStrdTermNm = "공통표준용어명";
+
+            words.forEach((w, i) => {
+                console.log(`Word ${i + 1}: ${w}`);
+                let leng = words.length-1;
+                let wordsIndex = i;
+                // 공통표준단어 표출
+                totalList['공통표준단어'].forEach((word, i) => {
+                    // 검색하는 단어가 공통표준단어에 있을 때,
+                    if (w === word[cmStrdWordNm]) {
+                        let nmWordEn = JSON.stringify(word['공통표준단어영문약어명']).replace(/[\\r\\n]+/g, '');
+                        let nmWordKo = JSON.stringify(word[cmStrdWordNm]).replace(/[\\r\\n]+/g, '');
+                        let text = JSON.stringify(word, null, 2).replace(/[\\r\\n]+/g, '');
+
+                        if (wordsIndex < leng) {
+                            sumWordKo += nmWordKo + "_";
+                            sumWordEn += nmWordEn + "_";
+                        } else {
+                            sumWordKo += nmWordKo;
+                            sumWordEn += nmWordEn;
+                        }
+
+                        // ul 태그 생성
+                        let ul = document.createElement('ul');
+                        ul.textContent = nmWordKo + ": " + nmWordEn;
+
+                        // li 태그 생성
+                        let li = document.createElement('li');
+                        li.textContent = text;
+
+                        // li 태그에 id 추가
+                        ul.setAttribute('id', `word-${i}`);
+                        li.setAttribute('id', `word-${i}-li`);
+                        
+                        // 생성된 li 태그를 ul 태그에 추가
+                        document.getElementById('wordList').appendChild(ul);
+                        document.getElementById(`word-${i}`).appendChild(li);
+                        document.getElementById(`word-${i}-li`).style.display = 'none';
+
+                        ul.addEventListener('click', () => {
+                            let target = document.getElementById(`word-${i}-li`);
+                            target.style.display = (target.style.display === 'block') ? 'none' : 'block';
+                        })
+                    }
+                })
+                // 검색하는 단어를 조합하여 사용 가능한 용어 추천
+                let li = document.createElement('li');
+                li.textContent = sumWordKo + " : " + sumWordEn;
+                li.setAttribute('id', 'resultWord');
+                document.getElementById('resultWord').appendChild(li);
+
+                // 공통표준용어 표출
+                totalList['공통표준용어'].forEach((term, i) => {
+                    let nmTermEn = JSON.stringify(term['공통표준용어영문약어명']).replace(/[\\r\\n]+/g, '');
+                    let nmTermKo = JSON.stringify(term[cmStrdTermNm]).replace(/[\\r\\n]+/g, '');
+                    let ulText = nmTermKo + ": " + nmTermEn;
+                    let text = JSON.stringify(term, null, 2).replace(/[\\r\\n]+/g, '');
+
+                    // 검색하는 단어 모두가 공통표준용어와 일치했을 때,
+                    if (termValue === term[cmStrdTermNm] && !termCheck) {
+                        termCheck = true;
+                        let ul = document.createElement('ul');
+                        let li = document.createElement('li');
+                        ul.textContent = ulText;
+                        li.textContent = text;
+                        ul.setAttribute('id', `term-re-${i}`);
+                        li.setAttribute('id', `term-re-${i}-li`);
+                        document.getElementById('resultTerm').appendChild(ul);
+                        document.getElementById(`term-re-${i}`).appendChild(li);
+                        let target = document.getElementById(`term-re-${i}-li`);
+                    }
+
+                    // 검색하는 단어 중 일부가 공통표준용어에 있을 때,
+                    if (term[cmStrdTermNm].includes(w)) {
+                        // ul 태그 생성
+                        let ul = document.createElement('ul');
+                        ul.textContent = ulText;
+                        
+                        // li 태그 생성
+                        let li = null;
+
+                        // li 태그에 id 추가
+                        ul.setAttribute('id', `term-${i}`);
+                        
+                        if (!document.getElementById(`term-${i}-li`)) {
+                            li = document.createElement('li');
+                            li.textContent = text;
+                            li.setAttribute('id', `term-${i}-li`);
+                        }
+
+                        // 생성된 li 태그를 ul 태그에 추가
+                        document.getElementById('termList').appendChild(ul);
+                        
+                        if (li !== null) {
+                            document.getElementById(`term-${i}`).appendChild(li);
+                        }
+
+                        document.getElementById(`term-${i}-li`).style.display = 'none';
+                        
+                        ul.addEventListener('click', () => {
+                            let target = document.getElementById(`term-${i}-li`);
+                            target.style.display = (target.style.display === 'block') ? 'none' : 'block';
+                        })
+                    }
+                })
+            })
+        }
+    </script>
+</body>
+</html>
