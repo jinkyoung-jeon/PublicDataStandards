@@ -11,7 +11,9 @@
         <div id="input-box">
             <input type="file" id="csv-file" onchange="readExcel(event)" />
             <input id="search" type="text" placeholder="생성할 용어 입력" />
-            <button onclick="createText()">변경</button>
+            <button onclick="createText(1)">변경</button>
+            <input id="searchEn" type="text" placeholder="찾을 용어(영문) 입력" />
+            <button onclick="createText(2)">조회</button>
             <button id="clear" onclick="delAll()">초기화</button>
         </div>
         <div id="value">
@@ -58,15 +60,20 @@
             reader.readAsBinaryString(file);
         }
 
-        const createText = () => {
+        const createText = (param) => {
             const value = document.getElementById('search').value.trim();
-            const words = value.split(/\s+/);
-            const termValue = value.replace(/(\s*)/g, "");
+            const valueEn = document.getElementById('searchEn').value.trim().toUpperCase();
+            const words = (param === 1) ? value.split(/\s+/) : valueEn.split(/\s+|_+/);
+            const termValue = (param === 1) ? value.replace(/(\s*)/g, "") : valueEn.replace(/(\s*)/g, "").toUpperCase();
             let termCheck = null;
             let sumWordKo = '';
             let sumWordEn = '';
             let cmStrdWordNm = "공통표준단어명";
             let cmStrdTermNm = "공통표준용어명";
+            let cmStrdWordNmEn = "공통표준단어영문약어명";
+            let cmStrdTermNmEn = "공통표준용어영문약어명";
+            let wordNm = (param === 1) ? cmStrdWordNm : cmStrdWordNmEn;
+            let termNm = (param === 1) ? cmStrdTermNm : cmStrdTermNmEn;
 
             words.forEach((w, i) => {
                 console.log(`Word ${i + 1}: ${w}`);
@@ -74,9 +81,10 @@
                 let wordsIndex = i;
                 // 공통표준단어 표출
                 totalList['공통표준단어'].forEach((word, i) => {
+                    // 변경/조회 버튼 구분
                     // 검색하는 단어가 공통표준단어에 있을 때,
-                    if (w === word[cmStrdWordNm]) {
-                        let nmWordEn = JSON.stringify(word['공통표준단어영문약어명']).replace(/[\\r\\n]+/g, '');
+                    if (w === word[wordNm]) {
+                        let nmWordEn = JSON.stringify(word[cmStrdWordNmEn]).replace(/[\\r\\n]+/g, '');
                         let nmWordKo = JSON.stringify(word[cmStrdWordNm]).replace(/[\\r\\n]+/g, '');
                         let text = JSON.stringify(word, null, 2).replace(/[\\r\\n]+/g, '');
 
@@ -111,6 +119,7 @@
                         })
                     }
                 })
+
                 // 검색하는 단어를 조합하여 사용 가능한 용어 추천
                 let ul = document.createElement('ul');
                 ul.textContent = sumWordKo + " : " + sumWordEn;
@@ -119,13 +128,13 @@
 
                 // 공통표준용어 표출
                 totalList['공통표준용어'].forEach((term, i) => {
-                    let nmTermEn = JSON.stringify(term['공통표준용어영문약어명']).replace(/[\\r\\n]+/g, '');
+                    let nmTermEn = JSON.stringify(term[cmStrdTermNmEn]).replace(/[\\r\\n]+/g, '');
                     let nmTermKo = JSON.stringify(term[cmStrdTermNm]).replace(/[\\r\\n]+/g, '');
                     let ulText = nmTermKo + ": " + nmTermEn;
                     let text = JSON.stringify(term, null, 2).replace(/[\\r\\n]+/g, '');
 
                     // 검색하는 단어 모두가 공통표준용어와 일치했을 때,
-                    if (termValue === term[cmStrdTermNm] && !termCheck) {
+                    if (termValue === term[termNm] && !termCheck) {
                         termCheck = true;
                         let ul = document.createElement('ul');
                         let li = document.createElement('li');
@@ -139,7 +148,7 @@
                     }
 
                     // 검색하는 단어 중 일부가 공통표준용어에 있을 때,
-                    if (term[cmStrdTermNm].includes(w)) {
+                    if (term[termNm].includes(w)) {
                         // ul 태그 생성
                         let ul = document.createElement('ul');
                         ul.textContent = ulText;
